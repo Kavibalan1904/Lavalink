@@ -1,0 +1,17 @@
+# ── Lavalink JAR (too large for Git, download separately) ──
+Lavalink.jar
+
+# ── Logs ──
+logs/
+*.log
+
+# ── Plugin JARs (auto-downloaded by Lavalink) ──
+plugins/
+
+# ── IDE / OS ──
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
