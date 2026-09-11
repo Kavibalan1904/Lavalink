@@ -1,36 +1,25 @@
-# ══════════════════════════════════════════════════════════════════
-# Lavalink v4 — application.yml
-# Optimized for HIGH QUALITY + Spotify/Deezer/YouTube playback
-# Deploy on Discloud.com as a Java application
-# ══════════════════════════════════════════════════════════════════
-
 server:
   port: 2333
   address: 0.0.0.0
+  http2:
+    enabled: true
 
 lavalink:
   plugins:
-    # ── LavaSrc Plugin (Spotify, Deezer, Apple Music support) ──
-    - dependency: "com.github.topi314.lavasrc:lavasrc-plugin:4.8.3"
-      repository: "https://maven.lavalink.dev/releases"
-      snapshot: false
-
-    # ── YouTube Source Plugin (Required for YouTube playback) ──
     - dependency: "dev.lavalink.youtube:youtube-plugin:1.18.2"
       repository: "https://maven.lavalink.dev/releases"
-      snapshot: false
-
+    - dependency: "com.github.topi314.lavasrc:lavasrc-plugin:4.8.3"
+      repository: "https://maven.lavalink.dev/releases"
   server:
-    password: "${LAVALINK_PASSWORD:youshallnotpass}"    # Set via env var on Discloud
+    password: "youshallnotpass"
     sources:
-      youtube: false                  # Disabled — handled by youtube-plugin below
+      youtube: false # managed by youtube-plugin
       bandcamp: true
       soundcloud: true
       twitch: true
       vimeo: true
       http: true
       local: false
-
     filters:
       volume: true
       equalizer: true
@@ -42,94 +31,50 @@ lavalink:
       rotation: true
       channelMix: true
       lowPass: true
-
-    # ── Audio Quality Settings ──
-    opusEncodingQuality: 10           # 0-10, 10 = best quality (uses more CPU)
-    resamplingQuality: HIGH           # LOW, MEDIUM, HIGH — affects audio fidelity
-    trackStuckThresholdMs: 10000      # How long before declaring a track "stuck"
+    bufferDurationMs: 1000 # 1000ms NAS buffer — protects against GC pauses on free-tier hosting
+    frameBufferDurationMs: 8000 # 8s frame buffer — large cushion against network jitter and GC spikes
+    opusEncodingQuality: 8 # Crisp audio with significantly lower CPU load
+    resamplingQuality: MEDIUM # Balanced resampling avoiding CPU spikes
+    trackStuckThresholdMs: 5000 # Detect stuck tracks in 5s instead of 10s for faster retry
     useSeekGhosting: true
     youtubePlaylistLoadLimit: 100
-    playerUpdateInterval: 5
+    playerUpdateInterval: 5 # Client tracks position locally; 5s server sync is plenty
     youtubeSearchEnabled: true
     soundcloudSearchEnabled: true
     gc-warnings: true
 
-# ══════════════════════════════════════════════════════════════════
-# Plugin Configurations
-# ══════════════════════════════════════════════════════════════════
-
 plugins:
-
-  # ── YouTube Source Plugin Config ──
   youtube:
     enabled: true
     allowSearch: true
     allowDirectVideoIds: true
     allowDirectPlaylistIds: true
     clients:
-      - MUSIC                         # YouTube Music client (best audio quality)
-      - M_WEB                         # Mobile web (good fallback)
-      - WEB                           # Regular web client
-      - WEBEMBEDDED                   # Embedded player
-      - ANDROID_VR                    # Android VR client
-      - TV                            # TV client
-      - TVHTML5EMBEDDED               # TV HTML5 embedded
-    # ── YouTube OAuth (OPTIONAL but recommended) ──
-    # Prevents "Sign in Required" errors for age-restricted content
-    # See README for setup instructions
-    oauth:
-      enabled: false                  # Set to true after getting a refresh token
-      skipInitialization: true
-      # refreshToken: ""              # Paste your refresh token here after setup
+      - MUSIC
+      - ANDROID_VR
+      - ANDROID_MUSIC
+      - TV
+      - MWEB
+      - WEBEMBEDDED
+      - WEB
 
-  # ── LavaSrc Plugin Config ──
-  lavasrc:
-    # ── Search Providers (ORDER MATTERS — first match wins) ──
-    # This is what makes Spotify sound ORIGINAL instead of "fake"
-    # Priority: Deezer ISRC → YouTube Music ISRC → YouTube Music search → YouTube search
-    providers:
-      - "dzisrc:%ISRC%"               # 1. Deezer by ISRC (exact studio master match)
-      - "ytmsearch:%ISRC%"            # 2. YouTube Music by ISRC (high quality fallback)
-      - "dzsearch:%QUERY%"            # 3. Deezer text search
-      - "ytmsearch:%QUERY%"           # 4. YouTube Music text search
-      - "ytsearch:%QUERY%"            # 5. Regular YouTube search (last resort)
+metrics:
+  prometheus:
+    enabled: false
 
-    # ── Source Toggles ──
-    sources:
-      spotify: true
-      applemusic: false               # Set to true if you have Apple Music credentials
-      deezer: true                    # Enable for best audio quality matching
-      yandexmusic: false
-      flowerytts: false
-      vkmusic: false
-
-    # ── Spotify Configuration ──
-    # Get credentials at: https://developer.spotify.com/dashboard
-    # 1. Go to https://developer.spotify.com/dashboard
-    # 2. Click "Create App"
-    # 3. Fill in any name/description, set redirect URI to http://localhost
-    # 4. Copy Client ID and Client Secret below
-    spotify:
-      clientId: "${SPOTIFY_CLIENT_ID}"              # Set via env var on Discloud
-      clientSecret: "${SPOTIFY_CLIENT_SECRET}"      # Set via env var on Discloud
-      countryCode: "IN"               # Your country code (IN = India)
-      playlistLoadLimit: 6            # Number of pages (100 tracks each) to load
-      albumLoadLimit: 6
-
-    # ── Deezer Configuration ──
-    # Deezer works without credentials for basic ISRC matching
-    # For premium quality, provide a valid ARL cookie (optional)
-    deezer:
-      countryCode: "IN"
-      # arl: ""                       # Optional: Deezer ARL cookie for premium quality
+sentry:
+  dsn: ""
+  environment: ""
 
 logging:
   file:
-    max-history: 10
-    max-size: 10MB
-  path: ./logs/
-
+    path: ./logs/lavalink.log
   level:
     root: INFO
     lavalink: INFO
-    dev.lavalink.youtube: WARN        # Reduce YouTube plugin spam
+  request:
+    enabled: false
+  logback:
+    rollingpolicy:
+      max-file-size: 10MB
+      max-history: 7
